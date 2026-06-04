@@ -1,5 +1,6 @@
 # See GitHub's documentation for more information on this file:
 # https://docs.github.com/en/code-security/supply-chain-security/keeping-your-dependencies-updated-automatically/configuration-options-for-dependency-updates
+# Manual Dependabot check trigger: 2026-06-04
 version: 2
 updates:
   # Maintain dependencies for Go modules

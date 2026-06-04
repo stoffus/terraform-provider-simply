@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -54,6 +55,9 @@ func (r *DNSRecordResource) Schema(ctx context.Context, req resource.SchemaReque
 			"record_id": schema.Int64Attribute{
 				Computed:            true,
 				MarkdownDescription: "Simply.com DNS record ID.",
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
 			"name": schema.StringAttribute{
 				Required:            true,
@@ -152,18 +156,23 @@ func (r *DNSRecordResource) Read(ctx context.Context, req resource.ReadRequest, 
 
 func (r *DNSRecordResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan dnsRecordModel
+	var state dnsRecordModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	err := r.client.UpdateDNSRecord(ctx, plan.Product.ValueString(), plan.RecordID.ValueInt64(), payloadFromModel(plan))
+	product := state.Product.ValueString()
+	recordIDValue := state.RecordID.ValueInt64()
+
+	err := r.client.UpdateDNSRecord(ctx, product, recordIDValue, payloadFromModel(plan))
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to Update DNS Record", err.Error())
 		return
 	}
 
-	record, found, err := r.client.GetDNSRecord(ctx, plan.Product.ValueString(), plan.RecordID.ValueInt64())
+	record, found, err := r.client.GetDNSRecord(ctx, product, recordIDValue)
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to Read DNS Record", err.Error())
 		return
@@ -173,8 +182,8 @@ func (r *DNSRecordResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	state := modelFromRecord(plan.Product.ValueString(), record)
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	nextState := modelFromRecord(product, record)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &nextState)...)
 }
 
 func (r *DNSRecordResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {

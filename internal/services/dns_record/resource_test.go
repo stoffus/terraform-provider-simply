@@ -58,6 +58,7 @@ func TestAccDNSRecordResource(t *testing.T) {
 		},
 	})
 
+	server.assertNoInvalidRecordIDUsed(t)
 	server.assertDeleted(t)
 }
 
@@ -226,10 +227,11 @@ resource "simply_dns_record" "test" {
 
 type dnsMockServer struct {
 	*httptest.Server
-	mu          sync.Mutex
-	record      simply.DNSRecord
-	deleted     bool
-	createCount int
+	mu                  sync.Mutex
+	record              simply.DNSRecord
+	deleted             bool
+	createCount         int
+	invalidRecordIDUsed bool
 }
 
 func newDNSMockServer(t *testing.T) *dnsMockServer {
@@ -255,6 +257,9 @@ func (s *dnsMockServer) handle(w http.ResponseWriter, r *http.Request) {
 		s.handleUpdate(w, r)
 	case r.URL.Path == "/my/products/example.com/dns/records/123/" && r.Method == http.MethodDelete:
 		s.handleDelete(w)
+	case strings.Contains(r.URL.Path, "/dns/records/0/"):
+		s.markInvalidRecordIDUsed()
+		http.Error(w, `{"error":"invalid record id"}`, http.StatusNotFound)
 	default:
 		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
 	}
@@ -340,6 +345,22 @@ func (s *dnsMockServer) assertCreateCount(t *testing.T, expected int) {
 	defer s.mu.Unlock()
 	if s.createCount != expected {
 		t.Fatalf("expected %d creates, got %d", expected, s.createCount)
+	}
+}
+
+func (s *dnsMockServer) markInvalidRecordIDUsed() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.invalidRecordIDUsed = true
+}
+
+func (s *dnsMockServer) assertNoInvalidRecordIDUsed(t *testing.T) {
+	t.Helper()
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.invalidRecordIDUsed {
+		t.Fatal("expected provider not to use record_id 0")
 	}
 }
 

@@ -1,4 +1,4 @@
-// Copyright Christopher Svensson
+// Copyright Christopher Svensson 2026
 // SPDX-License-Identifier: MIT
 
 package simply

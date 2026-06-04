@@ -52,6 +52,48 @@ type DNSRecordPayload struct {
 	Comment  *string `json:"comment,omitempty"`
 }
 
+type Product struct {
+	Object    string        `json:"object"`
+	ObjectURI string        `json:"object_uri"`
+	Name      string        `json:"name"`
+	Cancelled bool          `json:"cancelled"`
+	Domain    ProductDomain `json:"domain"`
+	Product   ProductInfo   `json:"product"`
+	Servers   ProductServer `json:"servers"`
+}
+
+type ProductDomain struct {
+	Name      string  `json:"name"`
+	NameIDN   string  `json:"name_idn"`
+	Managed   bool    `json:"managed"`
+	RenewDate *string `json:"date_renewdate"`
+}
+
+type ProductInfo struct {
+	ID          int64   `json:"id"`
+	Name        string  `json:"name"`
+	CreatedDate string  `json:"date_created"`
+	ExpireDate  *string `json:"date_expire"`
+}
+
+type ProductServer struct {
+	Nameservers []string `json:"nameservers"`
+}
+
+type SetNameserversPayload struct {
+	Nameservers []string `json:"nameservers"`
+}
+
+type DNSSECKey struct {
+	Type string `json:"type"`
+	Data string `json:"data"`
+}
+
+type AddDNSSECKeyPayload struct {
+	Type string `json:"type"`
+	Data string `json:"data"`
+}
+
 func NewClient(config ClientConfig) *Client {
 	endpoint, _ := url.Parse(strings.TrimRight(config.Endpoint, "/"))
 	return &Client{
@@ -60,6 +102,14 @@ func NewClient(config ClientConfig) *Client {
 		endpoint:    endpoint,
 		httpClient:  &http.Client{Timeout: config.Timeout},
 	}
+}
+
+func (c *Client) ListProducts(ctx context.Context) ([]Product, error) {
+	var response struct {
+		Products []Product `json:"products"`
+	}
+	err := c.request(ctx, http.MethodGet, "/my/products/", nil, &response)
+	return response.Products, err
 }
 
 func (c *Client) GetDNSZone(ctx context.Context, product string) (DNSZone, error) {
@@ -98,6 +148,35 @@ func (c *Client) DeleteDNSRecord(ctx context.Context, product string, recordID i
 
 func (c *Client) ReloadDNSZone(ctx context.Context, product string) error {
 	return c.request(ctx, http.MethodPost, fmt.Sprintf("/my/products/%s/dns/reload/", url.PathEscape(product)), nil, nil)
+}
+
+func (c *Client) GetRegistryNameservers(ctx context.Context, product string) ([]string, error) {
+	var response struct {
+		Nameservers []string `json:"nameservers"`
+	}
+	err := c.request(ctx, http.MethodGet, fmt.Sprintf("/my/products/%s/registry/nameservers/", url.PathEscape(product)), nil, &response)
+	return response.Nameservers, err
+}
+
+func (c *Client) SetRegistryNameservers(ctx context.Context, product string, nameservers []string) error {
+	payload := SetNameserversPayload{Nameservers: nameservers}
+	return c.request(ctx, http.MethodPut, fmt.Sprintf("/my/products/%s/registry/nameservers/", url.PathEscape(product)), payload, nil)
+}
+
+func (c *Client) ListRegistryDNSSECKeys(ctx context.Context, product string) ([]DNSSECKey, error) {
+	var response struct {
+		Keys []DNSSECKey `json:"dnssec_keys"`
+	}
+	err := c.request(ctx, http.MethodGet, fmt.Sprintf("/my/products/%s/registry/dnssec/", url.PathEscape(product)), nil, &response)
+	return response.Keys, err
+}
+
+func (c *Client) AddRegistryDNSSECKey(ctx context.Context, product string, payload AddDNSSECKeyPayload) error {
+	return c.request(ctx, http.MethodPost, fmt.Sprintf("/my/products/%s/registry/dnssec/", url.PathEscape(product)), payload, nil)
+}
+
+func (c *Client) DeleteRegistryDNSSECKeys(ctx context.Context, product string) error {
+	return c.request(ctx, http.MethodDelete, fmt.Sprintf("/my/products/%s/registry/dnssec/", url.PathEscape(product)), nil, nil)
 }
 
 func (c *Client) GetDNSRecord(ctx context.Context, product string, recordID int64) (DNSRecord, bool, error) {

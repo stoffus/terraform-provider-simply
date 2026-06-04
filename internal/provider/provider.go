@@ -18,6 +18,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stoffus/terraform-provider-simply/internal/services/dns_record"
 	"github.com/stoffus/terraform-provider-simply/internal/services/dns_zone"
+	"github.com/stoffus/terraform-provider-simply/internal/services/products"
+	"github.com/stoffus/terraform-provider-simply/internal/services/registry_dnssec"
+	"github.com/stoffus/terraform-provider-simply/internal/services/registry_nameservers"
 	"github.com/stoffus/terraform-provider-simply/internal/simply"
 )
 
@@ -116,6 +119,8 @@ func (p *SimplyProvider) Configure(ctx context.Context, req provider.ConfigureRe
 func (p *SimplyProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		dnsrecord.NewResource,
+		registrydnssec.NewResource,
+		registrynameservers.NewResource,
 	}
 }
 
@@ -124,6 +129,7 @@ func (p *SimplyProvider) DataSources(ctx context.Context) []func() datasource.Da
 		dnsrecord.NewDataSource,
 		dnsrecord.NewListDataSource,
 		dnszone.NewDataSource,
+		products.NewDataSource,
 	}
 }
 

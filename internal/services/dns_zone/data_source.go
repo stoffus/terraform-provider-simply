@@ -7,12 +7,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/christopher/terraform-provider-simply/internal/simply"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stoffus/terraform-provider-simply/internal/simply"
 )
 
 var _ datasource.DataSource = &DNSZoneDataSource{}

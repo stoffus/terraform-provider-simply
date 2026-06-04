@@ -10,15 +10,15 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/christopher/terraform-provider-simply/internal/services/dns_record"
-	"github.com/christopher/terraform-provider-simply/internal/services/dns_zone"
-	"github.com/christopher/terraform-provider-simply/internal/simply"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stoffus/terraform-provider-simply/internal/services/dns_record"
+	"github.com/stoffus/terraform-provider-simply/internal/services/dns_zone"
+	"github.com/stoffus/terraform-provider-simply/internal/simply"
 )
 
 var _ provider.Provider = &SimplyProvider{}

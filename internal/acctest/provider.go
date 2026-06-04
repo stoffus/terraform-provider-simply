@@ -6,9 +6,9 @@ package acctest
 import (
 	"testing"
 
-	"github.com/christopher/terraform-provider-simply/internal/provider"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/stoffus/terraform-provider-simply/internal/provider"
 )
 
 var ProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){

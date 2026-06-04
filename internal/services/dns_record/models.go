@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/christopher/terraform-provider-simply/internal/simply"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stoffus/terraform-provider-simply/internal/simply"
 )
 
 type dnsRecordModel struct {

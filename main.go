@@ -8,14 +8,15 @@ import (
 	"flag"
 	"log"
 
-	"github.com/christopher/terraform-provider-simply/internal/provider"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/stoffus/terraform-provider-simply/internal/provider"
 )
 
 var (
 	// these will be set by the goreleaser configuration
 	// to appropriate values for the compiled binary.
 	version string = "dev"
+	commit  string = "unknown"
 
 	// goreleaser can pass other information to the main package, such as the specific commit
 	// https://goreleaser.com/cookbooks/using-main.version/
@@ -28,7 +29,7 @@ func main() {
 	flag.Parse()
 
 	opts := providerserver.ServeOpts{
-		Address: "registry.terraform.io/christopher/simply",
+		Address: "registry.terraform.io/stoffus/simply",
 		Debug:   debug,
 	}
 

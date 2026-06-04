@@ -1,4 +1,4 @@
-module github.com/christopher/terraform-provider-simply
+module github.com/stoffus/terraform-provider-simply
 
 go 1.25.8
 

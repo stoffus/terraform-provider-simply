@@ -8,9 +8,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/christopher/terraform-provider-simply/internal/acctest"
-	"github.com/christopher/terraform-provider-simply/internal/simply"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/stoffus/terraform-provider-simply/internal/acctest"
+	"github.com/stoffus/terraform-provider-simply/internal/simply"
 )
 
 func TestAccDNSDataSources(t *testing.T) {

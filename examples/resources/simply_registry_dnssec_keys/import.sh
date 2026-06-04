@@ -1,0 +1,1 @@
+terraform import simply_registry_dnssec_keys.example example.com

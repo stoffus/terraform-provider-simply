@@ -1,0 +1,1 @@
+terraform import simply_registry_nameservers.example example.com

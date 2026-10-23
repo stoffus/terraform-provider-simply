@@ -244,6 +244,11 @@ func (s *dnsMockServer) handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.URL.Path == "/my/products/" && r.Method == http.MethodGet {
+		writeJSON(w, map[string]any{"products": []map[string]any{{"object": "example.com", "domain": map[string]any{"name": "example.com", "name_idn": "example.com"}}}})
+		return
+	}
+
 	switch {
 	case r.URL.Path == "/my/products/example.com/dns/records/" && r.Method == http.MethodGet:
 		s.handleList(w)

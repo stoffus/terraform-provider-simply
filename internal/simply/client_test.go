@@ -20,6 +20,8 @@ func TestClientDNSRecordLifecycle(t *testing.T) {
 		assertBearerAuth(t, r)
 
 		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/my/products/":
+			writeJSON(w, map[string]any{"products": []Product{{Object: "example.com", Domain: ProductDomain{Name: "example.com", NameIDN: "example.com"}}}})
 		case r.Method == http.MethodPost && r.URL.Path == "/my/products/example.com/dns/records/":
 			if err := json.NewDecoder(r.Body).Decode(&created); err != nil {
 				t.Fatalf("decode create payload: %s", err)
@@ -102,6 +104,8 @@ func TestClientDNSZoneAndReload(t *testing.T) {
 		assertBearerAuth(t, r)
 
 		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/my/products/":
+			writeJSON(w, map[string]any{"products": []Product{{Object: "example.com", Domain: ProductDomain{Name: "example.com", NameIDN: "example.com"}}}})
 		case r.Method == http.MethodGet && r.URL.Path == "/my/products/example.com/dns/":
 			writeJSON(w, map[string]any{"zone": map[string]any{"name": "example.com"}})
 		case r.Method == http.MethodPost && r.URL.Path == "/my/products/example.com/dns/reload/":
@@ -252,23 +256,38 @@ func TestClientErrorResponse(t *testing.T) {
 	}
 }
 
-func TestClientEscapesProductOnce(t *testing.T) {
-	var gotPath string
-	var gotRawPath string
+func TestClientResolvesProductObject(t *testing.T) {
+	var paths []string
+	productLists := 0
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPath = r.URL.Path
-		gotRawPath = r.URL.EscapedPath()
+		if r.URL.Path == "/my/products/" {
+			productLists++
+			writeJSON(w, map[string]any{"products": []Product{{Object: "blåbær.dk", Domain: ProductDomain{Name: "blåbær.dk", NameIDN: "xn--blbr-roah.dk"}}}})
+			return
+		}
+		paths = append(paths, r.URL.Path)
 		writeJSON(w, map[string]any{"records": []DNSRecord{}})
 	}))
 	defer server.Close()
 
 	client := newTestClient(server.URL)
-	if _, err := client.ListDNSRecords(context.Background(), "blåbær.dk"); err != nil {
-		t.Fatalf("list records: %s", err)
+	for _, product := range []string{"blåbær.dk", "xn--blbr-roah.dk", "XN--BLBR-ROAH.DK."} {
+		if _, err := client.ListDNSRecords(context.Background(), product); err != nil {
+			t.Fatalf("list records for %q: %s", product, err)
+		}
 	}
-	if gotPath != "/my/products/blåbær.dk/dns/records/" {
-		t.Fatalf("unexpected path %q (raw %q)", gotPath, gotRawPath)
+	for _, path := range paths {
+		if path != "/my/products/blåbær.dk/dns/records/" {
+			t.Fatalf("unexpected path %q", path)
+		}
+	}
+	if productLists != 1 {
+		t.Fatalf("expected products to be listed once, got %d", productLists)
+	}
+
+	if _, err := client.ListDNSRecords(context.Background(), "unknown.dk"); err == nil {
+		t.Fatal("expected error for unknown product")
 	}
 }
 

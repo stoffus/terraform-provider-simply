@@ -199,8 +199,8 @@ func (c *Client) request(ctx context.Context, method string, path string, body a
 		bodyReader = bytes.NewReader(encoded)
 	}
 
-	requestURL := c.endpoint.ResolveReference(&url.URL{Path: strings.TrimRight(c.endpoint.Path, "/") + path})
-	req, err := http.NewRequestWithContext(ctx, method, requestURL.String(), bodyReader)
+	requestURL := strings.TrimRight(c.endpoint.String(), "/") + path
+	req, err := http.NewRequestWithContext(ctx, method, requestURL, bodyReader)
 	if err != nil {
 		return fmt.Errorf("create request: %w", err)
 	}
@@ -221,7 +221,7 @@ func (c *Client) request(ctx context.Context, method string, path string, body a
 		return fmt.Errorf("read response body: %w", err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("%s %s returned %d: %s", method, requestURL.String(), resp.StatusCode, strings.TrimSpace(string(respBody)))
+		return fmt.Errorf("%s %s returned %d: %s", method, requestURL, resp.StatusCode, strings.TrimSpace(string(respBody)))
 	}
 	if target == nil || len(respBody) == 0 {
 		return nil

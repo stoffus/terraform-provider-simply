@@ -252,6 +252,26 @@ func TestClientErrorResponse(t *testing.T) {
 	}
 }
 
+func TestClientEscapesProductOnce(t *testing.T) {
+	var gotPath string
+	var gotRawPath string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotRawPath = r.URL.EscapedPath()
+		writeJSON(w, map[string]any{"records": []DNSRecord{}})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server.URL)
+	if _, err := client.ListDNSRecords(context.Background(), "blåbær.dk"); err != nil {
+		t.Fatalf("list records: %s", err)
+	}
+	if gotPath != "/my/products/blåbær.dk/dns/records/" {
+		t.Fatalf("unexpected path %q (raw %q)", gotPath, gotRawPath)
+	}
+}
+
 func newTestClient(endpoint string) *Client {
 	return NewClient(ClientConfig{
 		APIKey:   "secret",

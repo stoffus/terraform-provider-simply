@@ -51,6 +51,8 @@ func newDNSDataSourceMockServer(t *testing.T) *httptest.Server {
 		}
 
 		switch {
+		case r.URL.Path == "/my/products/" && r.Method == http.MethodGet:
+			writeJSON(w, map[string]any{"products": []map[string]any{{"object": "example.com", "domain": map[string]any{"name": "example.com", "name_idn": "example.com"}}}})
 		case r.URL.Path == "/my/products/example.com/dns/" && r.Method == http.MethodGet:
 			writeJSON(w, map[string]any{"zone": map[string]any{"name": "example.com"}})
 		case r.URL.Path == "/my/products/example.com/dns/records/" && r.Method == http.MethodGet:

@@ -91,6 +91,11 @@ func (s *mockServer) handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.URL.Path == "/my/products/" && r.Method == http.MethodGet {
+		writeJSON(w, map[string]any{"products": []map[string]any{{"object": "example.com", "domain": map[string]any{"name": "example.com", "name_idn": "example.com"}}}})
+		return
+	}
+
 	if r.URL.Path != "/my/products/example.com/registry/nameservers/" {
 		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
 		return

@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -25,6 +26,9 @@ type Client struct {
 	apiKey     string
 	endpoint   *url.URL
 	httpClient *http.Client
+
+	productsMu     sync.Mutex
+	productObjects map[string]string
 }
 
 type DNSZone struct {
@@ -109,11 +113,50 @@ func (c *Client) ListProducts(ctx context.Context) ([]Product, error) {
 	return response.Products, err
 }
 
+func (c *Client) productObject(ctx context.Context, product string) (string, error) {
+	c.productsMu.Lock()
+	defer c.productsMu.Unlock()
+
+	if c.productObjects == nil {
+		products, err := c.ListProducts(ctx)
+		if err != nil {
+			return "", fmt.Errorf("list products: %w", err)
+		}
+		objects := make(map[string]string, len(products)*3)
+		for _, p := range products {
+			objects[strings.ToLower(p.Object)] = p.Object
+		}
+		for _, p := range products {
+			for _, name := range []string{p.Domain.Name, p.Domain.NameIDN} {
+				key := strings.ToLower(name)
+				if _, exists := objects[key]; name != "" && !exists {
+					objects[key] = p.Object
+				}
+			}
+		}
+		c.productObjects = objects
+	}
+
+	object, ok := c.productObjects[strings.ToLower(strings.TrimSuffix(product, "."))]
+	if !ok {
+		return "", fmt.Errorf("product %q not found on the account", product)
+	}
+	return object, nil
+}
+
+func (c *Client) productRequest(ctx context.Context, method string, product string, path string, body any, target any) error {
+	object, err := c.productObject(ctx, product)
+	if err != nil {
+		return err
+	}
+	return c.request(ctx, method, "/my/products/"+url.PathEscape(object)+path, body, target)
+}
+
 func (c *Client) GetDNSZone(ctx context.Context, product string) (DNSZone, error) {
 	var response struct {
 		Zone DNSZone `json:"zone"`
 	}
-	err := c.request(ctx, http.MethodGet, fmt.Sprintf("/my/products/%s/dns/", url.PathEscape(product)), nil, &response)
+	err := c.productRequest(ctx, http.MethodGet, product, "/dns/", nil, &response)
 	return response.Zone, err
 }
 
@@ -121,7 +164,7 @@ func (c *Client) ListDNSRecords(ctx context.Context, product string) ([]DNSRecor
 	var response struct {
 		Records []DNSRecord `json:"records"`
 	}
-	err := c.request(ctx, http.MethodGet, fmt.Sprintf("/my/products/%s/dns/records/", url.PathEscape(product)), nil, &response)
+	err := c.productRequest(ctx, http.MethodGet, product, "/dns/records/", nil, &response)
 	return response.Records, err
 }
 
@@ -131,49 +174,49 @@ func (c *Client) CreateDNSRecord(ctx context.Context, product string, payload DN
 			ID int64 `json:"id"`
 		} `json:"record"`
 	}
-	err := c.request(ctx, http.MethodPost, fmt.Sprintf("/my/products/%s/dns/records/", url.PathEscape(product)), payload, &response)
+	err := c.productRequest(ctx, http.MethodPost, product, "/dns/records/", payload, &response)
 	return response.Record.ID, err
 }
 
 func (c *Client) UpdateDNSRecord(ctx context.Context, product string, recordID int64, payload DNSRecordPayload) error {
-	return c.request(ctx, http.MethodPut, fmt.Sprintf("/my/products/%s/dns/records/%d/", url.PathEscape(product), recordID), payload, nil)
+	return c.productRequest(ctx, http.MethodPut, product, fmt.Sprintf("/dns/records/%d/", recordID), payload, nil)
 }
 
 func (c *Client) DeleteDNSRecord(ctx context.Context, product string, recordID int64) error {
-	return c.request(ctx, http.MethodDelete, fmt.Sprintf("/my/products/%s/dns/records/%d/", url.PathEscape(product), recordID), nil, nil)
+	return c.productRequest(ctx, http.MethodDelete, product, fmt.Sprintf("/dns/records/%d/", recordID), nil, nil)
 }
 
 func (c *Client) ReloadDNSZone(ctx context.Context, product string) error {
-	return c.request(ctx, http.MethodPost, fmt.Sprintf("/my/products/%s/dns/reload/", url.PathEscape(product)), nil, nil)
+	return c.productRequest(ctx, http.MethodPost, product, "/dns/reload/", nil, nil)
 }
 
 func (c *Client) GetRegistryNameservers(ctx context.Context, product string) ([]string, error) {
 	var response struct {
 		Nameservers []string `json:"nameservers"`
 	}
-	err := c.request(ctx, http.MethodGet, fmt.Sprintf("/my/products/%s/registry/nameservers/", url.PathEscape(product)), nil, &response)
+	err := c.productRequest(ctx, http.MethodGet, product, "/registry/nameservers/", nil, &response)
 	return response.Nameservers, err
 }
 
 func (c *Client) SetRegistryNameservers(ctx context.Context, product string, nameservers []string) error {
 	payload := SetNameserversPayload{Nameservers: nameservers}
-	return c.request(ctx, http.MethodPut, fmt.Sprintf("/my/products/%s/registry/nameservers/", url.PathEscape(product)), payload, nil)
+	return c.productRequest(ctx, http.MethodPut, product, "/registry/nameservers/", payload, nil)
 }
 
 func (c *Client) ListRegistryDNSSECKeys(ctx context.Context, product string) ([]DNSSECKey, error) {
 	var response struct {
 		Keys []DNSSECKey `json:"dnssec_keys"`
 	}
-	err := c.request(ctx, http.MethodGet, fmt.Sprintf("/my/products/%s/registry/dnssec/", url.PathEscape(product)), nil, &response)
+	err := c.productRequest(ctx, http.MethodGet, product, "/registry/dnssec/", nil, &response)
 	return response.Keys, err
 }
 
 func (c *Client) AddRegistryDNSSECKey(ctx context.Context, product string, payload AddDNSSECKeyPayload) error {
-	return c.request(ctx, http.MethodPost, fmt.Sprintf("/my/products/%s/registry/dnssec/", url.PathEscape(product)), payload, nil)
+	return c.productRequest(ctx, http.MethodPost, product, "/registry/dnssec/", payload, nil)
 }
 
 func (c *Client) DeleteRegistryDNSSECKeys(ctx context.Context, product string) error {
-	return c.request(ctx, http.MethodDelete, fmt.Sprintf("/my/products/%s/registry/dnssec/", url.PathEscape(product)), nil, nil)
+	return c.productRequest(ctx, http.MethodDelete, product, "/registry/dnssec/", nil, nil)
 }
 
 func (c *Client) GetDNSRecord(ctx context.Context, product string, recordID int64) (DNSRecord, bool, error) {
@@ -199,8 +242,8 @@ func (c *Client) request(ctx context.Context, method string, path string, body a
 		bodyReader = bytes.NewReader(encoded)
 	}
 
-	requestURL := c.endpoint.ResolveReference(&url.URL{Path: strings.TrimRight(c.endpoint.Path, "/") + path})
-	req, err := http.NewRequestWithContext(ctx, method, requestURL.String(), bodyReader)
+	requestURL := strings.TrimRight(c.endpoint.String(), "/") + path
+	req, err := http.NewRequestWithContext(ctx, method, requestURL, bodyReader)
 	if err != nil {
 		return fmt.Errorf("create request: %w", err)
 	}
@@ -221,7 +264,7 @@ func (c *Client) request(ctx context.Context, method string, path string, body a
 		return fmt.Errorf("read response body: %w", err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("%s %s returned %d: %s", method, requestURL.String(), resp.StatusCode, strings.TrimSpace(string(respBody)))
+		return fmt.Errorf("%s %s returned %d: %s", method, requestURL, resp.StatusCode, strings.TrimSpace(string(respBody)))
 	}
 	if target == nil || len(respBody) == 0 {
 		return nil

@@ -130,11 +130,11 @@ func TestAccDNSRecordResourceValidation(t *testing.T) {
 			},
 			{
 				Config:      testAccDNSRecordResourceInvalidTTLConfig(server.URL),
-				ExpectError: regexp.MustCompile("Value must be between 1 and 2147483647"),
+				ExpectError: regexp.MustCompile("value must be between 1 and 2147483647"),
 			},
 			{
 				Config:      testAccDNSRecordResourceInvalidPriorityConfig(server.URL),
-				ExpectError: regexp.MustCompile("Value must be between 0 and 65535"),
+				ExpectError: regexp.MustCompile("value must be between 0 and 65535"),
 			},
 		},
 	})

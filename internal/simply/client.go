@@ -16,17 +16,15 @@ import (
 )
 
 type ClientConfig struct {
-	AccountName string
-	APIKey      string
-	Endpoint    string
-	Timeout     time.Duration
+	APIKey   string
+	Endpoint string
+	Timeout  time.Duration
 }
 
 type Client struct {
-	accountName string
-	apiKey      string
-	endpoint    *url.URL
-	httpClient  *http.Client
+	apiKey     string
+	endpoint   *url.URL
+	httpClient *http.Client
 }
 
 type DNSZone struct {
@@ -97,10 +95,9 @@ type AddDNSSECKeyPayload struct {
 func NewClient(config ClientConfig) *Client {
 	endpoint, _ := url.Parse(strings.TrimRight(config.Endpoint, "/"))
 	return &Client{
-		accountName: config.AccountName,
-		apiKey:      config.APIKey,
-		endpoint:    endpoint,
-		httpClient:  &http.Client{Timeout: config.Timeout},
+		apiKey:     config.APIKey,
+		endpoint:   endpoint,
+		httpClient: &http.Client{Timeout: config.Timeout},
 	}
 }
 
@@ -207,7 +204,7 @@ func (c *Client) request(ctx context.Context, method string, path string, body a
 	if err != nil {
 		return fmt.Errorf("create request: %w", err)
 	}
-	req.SetBasicAuth(c.accountName, c.apiKey)
+	req.Header.Set("Authorization", "Bearer "+c.apiKey)
 	req.Header.Set("Accept", "application/json")
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")

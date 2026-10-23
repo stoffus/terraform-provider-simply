@@ -20,7 +20,7 @@ provider "simply" {}
 
 ### Optional
 
-- `account_name` (String, Sensitive) Simply.com account name. Can also be set with `SIMPLY_ACCOUNT_NAME`.
+- `account_name` (String, Sensitive, Deprecated) No longer needed. The API key alone identifies the account, so this value is ignored.
 - `api_key` (String, Sensitive) Simply.com API key. Can also be set with `SIMPLY_API_KEY`.
 - `endpoint` (String) Simply.com API endpoint. Defaults to `https://api.simply.com/2`.
 - `http_timeout` (Number) HTTP timeout in seconds. Can also be set with `SIMPLY_HTTP_TIMEOUT`.

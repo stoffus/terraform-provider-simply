@@ -16,7 +16,7 @@ import (
 
 func TestAccProductsDataSource(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if user, pass, ok := r.BasicAuth(); !ok || user != "S123456" || pass != "secret" {
+		if r.Header.Get("Authorization") != "Bearer secret" {
 			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 			return
 		}
@@ -54,7 +54,6 @@ func TestAccProductsDataSource(t *testing.T) {
 	}))
 	defer server.Close()
 
-	t.Setenv("SIMPLY_ACCOUNT_NAME", "S123456")
 	t.Setenv("SIMPLY_API_KEY", "secret")
 
 	resource.Test(t, resource.TestCase{

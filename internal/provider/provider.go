@@ -49,7 +49,8 @@ func (p *SimplyProvider) Schema(ctx context.Context, req provider.SchemaRequest,
 			"account_name": schema.StringAttribute{
 				Optional:            true,
 				Sensitive:           true,
-				MarkdownDescription: "Simply.com account name. Can also be set with `SIMPLY_ACCOUNT_NAME`.",
+				MarkdownDescription: "No longer needed. The API key alone identifies the account, so this value is ignored.",
+				DeprecationMessage:  "account_name is no longer needed and can be removed. The API key alone identifies the account.",
 			},
 			"api_key": schema.StringAttribute{
 				Optional:            true,
@@ -75,7 +76,6 @@ func (p *SimplyProvider) Configure(ctx context.Context, req provider.ConfigureRe
 		return
 	}
 
-	accountName := valueOrEnv(data.AccountName, "SIMPLY_ACCOUNT_NAME")
 	apiKey := valueOrEnv(data.APIKey, "SIMPLY_API_KEY")
 	endpoint := valueOrDefault(data.Endpoint, "https://api.simply.com/2")
 	timeoutSeconds := int64(30)
@@ -92,9 +92,6 @@ func (p *SimplyProvider) Configure(ctx context.Context, req provider.ConfigureRe
 		timeoutSeconds = data.HTTPTimeout.ValueInt64()
 	}
 
-	if accountName == "" {
-		resp.Diagnostics.AddAttributeError(path.Root("account_name"), "Missing Simply Account Name", "Set account_name in the provider configuration or SIMPLY_ACCOUNT_NAME in the environment.")
-	}
 	if apiKey == "" {
 		resp.Diagnostics.AddAttributeError(path.Root("api_key"), "Missing Simply API Key", "Set api_key in the provider configuration or SIMPLY_API_KEY in the environment.")
 	}
@@ -106,10 +103,9 @@ func (p *SimplyProvider) Configure(ctx context.Context, req provider.ConfigureRe
 	}
 
 	client := simply.NewClient(simply.ClientConfig{
-		AccountName: accountName,
-		APIKey:      apiKey,
-		Endpoint:    endpoint,
-		Timeout:     time.Duration(timeoutSeconds) * time.Second,
+		APIKey:   apiKey,
+		Endpoint: endpoint,
+		Timeout:  time.Duration(timeoutSeconds) * time.Second,
 	})
 
 	resp.DataSourceData = client

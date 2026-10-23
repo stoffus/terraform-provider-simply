@@ -17,7 +17,7 @@ func TestClientDNSRecordLifecycle(t *testing.T) {
 	var updated DNSRecordPayload
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assertBasicAuth(t, r)
+		assertBearerAuth(t, r)
 
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/my/products/example.com/dns/records/":
@@ -99,7 +99,7 @@ func TestClientDNSRecordLifecycle(t *testing.T) {
 func TestClientDNSZoneAndReload(t *testing.T) {
 	reloaded := false
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assertBasicAuth(t, r)
+		assertBearerAuth(t, r)
 
 		switch {
 		case r.Method == http.MethodGet && r.URL.Path == "/my/products/example.com/dns/":
@@ -136,7 +136,7 @@ func TestClientProductsAndRegistry(t *testing.T) {
 	dnssecDeleted := false
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assertBasicAuth(t, r)
+		assertBearerAuth(t, r)
 
 		switch {
 		case r.Method == http.MethodGet && r.URL.Path == "/my/products/":
@@ -254,22 +254,17 @@ func TestClientErrorResponse(t *testing.T) {
 
 func newTestClient(endpoint string) *Client {
 	return NewClient(ClientConfig{
-		AccountName: "S123456",
-		APIKey:      "secret",
-		Endpoint:    endpoint,
-		Timeout:     10 * time.Second,
+		APIKey:   "secret",
+		Endpoint: endpoint,
+		Timeout:  10 * time.Second,
 	})
 }
 
-func assertBasicAuth(t *testing.T, r *http.Request) {
+func assertBearerAuth(t *testing.T, r *http.Request) {
 	t.Helper()
 
-	user, pass, ok := r.BasicAuth()
-	if !ok {
-		t.Fatal("missing basic auth")
-	}
-	if user != "S123456" || pass != "secret" {
-		t.Fatalf("unexpected basic auth: %q / %q", user, pass)
+	if got := r.Header.Get("Authorization"); got != "Bearer secret" {
+		t.Fatalf("unexpected authorization header: %q", got)
 	}
 }
 

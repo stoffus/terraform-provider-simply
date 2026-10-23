@@ -14,7 +14,6 @@ Initial coverage focuses on DNS:
 The provider follows Simply's documented environment variables:
 
 ```sh
-export SIMPLY_ACCOUNT_NAME="Sxxxxxx"
 export SIMPLY_API_KEY="..."
 export SIMPLY_HTTP_TIMEOUT="30"
 ```
@@ -23,8 +22,7 @@ Provider configuration can also set these values directly:
 
 ```hcl
 provider "simply" {
-  account_name = var.simply_account_name
-  api_key      = var.simply_api_key
+  api_key = var.simply_api_key
 }
 ```
 

@@ -22,7 +22,6 @@ func TestAccDNSRecordResource(t *testing.T) {
 	server := newDNSMockServer(t)
 	defer server.Close()
 
-	t.Setenv("SIMPLY_ACCOUNT_NAME", "S123456")
 	t.Setenv("SIMPLY_API_KEY", "secret")
 
 	resource.Test(t, resource.TestCase{
@@ -66,7 +65,6 @@ func TestAccDNSRecordResourcePriority(t *testing.T) {
 	server := newDNSMockServer(t)
 	defer server.Close()
 
-	t.Setenv("SIMPLY_ACCOUNT_NAME", "S123456")
 	t.Setenv("SIMPLY_API_KEY", "secret")
 
 	resource.Test(t, resource.TestCase{
@@ -89,7 +87,6 @@ func TestAccDNSRecordResourceRecreatesAfterDisappears(t *testing.T) {
 	server := newDNSMockServer(t)
 	defer server.Close()
 
-	t.Setenv("SIMPLY_ACCOUNT_NAME", "S123456")
 	t.Setenv("SIMPLY_API_KEY", "secret")
 
 	resource.Test(t, resource.TestCase{
@@ -121,7 +118,6 @@ func TestAccDNSRecordResourceValidation(t *testing.T) {
 	server := newDNSMockServer(t)
 	defer server.Close()
 
-	t.Setenv("SIMPLY_ACCOUNT_NAME", "S123456")
 	t.Setenv("SIMPLY_API_KEY", "secret")
 
 	resource.Test(t, resource.TestCase{
@@ -243,7 +239,7 @@ func newDNSMockServer(t *testing.T) *dnsMockServer {
 }
 
 func (s *dnsMockServer) handle(w http.ResponseWriter, r *http.Request) {
-	if user, pass, ok := r.BasicAuth(); !ok || user != "S123456" || pass != "secret" {
+	if r.Header.Get("Authorization") != "Bearer secret" {
 		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 		return
 	}
